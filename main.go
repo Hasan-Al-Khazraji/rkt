@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/caseymrm/menuet"
@@ -14,18 +16,25 @@ import (
 type Payload struct {
 	Data struct {
 		Timings struct {
+			Lastthird string `json:"Lastthird"`
 			Fajr      string `json:"Fajr"`
 			Sunrise   string `json:"Sunrise"`
 			Dhuhr     string `json:"Dhuhr"`
 			Asr       string `json:"Asr"`
 			Maghrib   string `json:"Maghrib"`
 			Isha      string `json:"Isha"`
-			Lastthird string `json:"Lastthird"`
 		} `json:"timings"`
 	} `json:"data"`
 }
 
-func rkt(city, country string) {
+func rkt() {
+	current := getPrayer()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+	city := os.Getenv("CITY")
+	country := os.Getenv("COUNTRY")
 	res, err := http.Get("https://api.aladhan.com/v1/timingsByCity/" + time.Now().Format("2-01-2006") + "?city=" + city + "&country=" + country)
 	if err != nil {
 		return
@@ -38,21 +47,51 @@ func rkt(city, country string) {
 	}
 	for {
 		menuet.App().SetMenuState(&menuet.MenuState{
-			Title: "🕌 " + "Fajr: " + p.Data.Timings.Fajr,
+			Title: "🕌 " + "Next Prayer: " + current,
 		})
 		time.Sleep(time.Second)
 	}
 }
 
-func main() {
-	err := godotenv.Load()
+func getPrayer() string {
+	// Get all prayers
+	res, err := http.Get("https://api.aladhan.com/v1/timingsByCity/" + time.Now().Format("2-01-2006") + "?city=" + "TOrontO" + "&country=" + "CANadA")
 	if err != nil {
 		panic(err)
 	}
-	city := os.Getenv("CITY")
-	country := os.Getenv("COUNTRY")
+	defer res.Body.Close()
 
-	go rkt(city, country)
+	var p Payload
+	if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
+		log.Fatal(err)
+	}
+	v := reflect.ValueOf(p.Data.Timings)
 
+	// Find which is next
+	var latestTime string
+	for i := 0; i < v.NumField(); i++ {
+		if timeCmpr(fmt.Sprint(v.Field(i).Interface()), time.Now().Format("15:04")) {
+			latestTime = fmt.Sprint(v.Field(i).Interface())
+			break
+		} else {
+			continue
+		}
+	}
+
+	return latestTime
+}
+
+func timeCmpr(time, cur string) bool {
+	if time[0:2] > cur[0:2] {
+		return true
+	} else if time[0:2] == cur[0:2] && time[3:] > cur[3:] {
+		return true
+	} else {
+		return false
+	}
+}
+
+func main() {
+	go rkt()
 	menuet.App().RunApplication()
 }
