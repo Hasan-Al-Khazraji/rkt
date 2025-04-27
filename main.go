@@ -28,7 +28,6 @@ type Payload struct {
 }
 
 func rkt() {
-	current := getPrayer()
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
@@ -46,25 +45,16 @@ func rkt() {
 		log.Fatal(err)
 	}
 	for {
+		current := getPrayer(p)
 		menuet.App().SetMenuState(&menuet.MenuState{
 			Title: "🕌 " + "Next Prayer: " + current,
 		})
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 15)
+		fmt.Println(current)
 	}
 }
 
-func getPrayer() string {
-	// Get all prayers
-	res, err := http.Get("https://api.aladhan.com/v1/timingsByCity/" + time.Now().Format("2-01-2006") + "?city=" + "TOrontO" + "&country=" + "CANadA")
-	if err != nil {
-		panic(err)
-	}
-	defer res.Body.Close()
-
-	var p Payload
-	if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
-		log.Fatal(err)
-	}
+func getPrayer(p Payload) string {
 	v := reflect.ValueOf(p.Data.Timings)
 
 	// Find which is next
