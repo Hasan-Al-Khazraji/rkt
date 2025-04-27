@@ -50,7 +50,6 @@ func rkt() {
 			Title: "🕌 " + "Next Prayer: " + current,
 		})
 		time.Sleep(time.Second * 15)
-		fmt.Println(current)
 	}
 }
 
@@ -58,7 +57,7 @@ func getPrayer(p Payload) string {
 	v := reflect.ValueOf(p.Data.Timings)
 
 	// Find which is next
-	var latestTime string
+	latestTime := fmt.Sprint(p.Data.Timings.Lastthird)
 	for i := 0; i < v.NumField(); i++ {
 		if timeCmpr(fmt.Sprint(v.Field(i).Interface()), time.Now().Format("15:04")) {
 			latestTime = fmt.Sprint(v.Field(i).Interface())
