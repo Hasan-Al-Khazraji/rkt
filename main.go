@@ -45,29 +45,31 @@ func rkt() {
 		log.Fatal(err)
 	}
 	for {
-		current := getPrayer(p)
+		current, prayerName := getPrayer(p)
 		menuet.App().SetMenuState(&menuet.MenuState{
-			Title: "🕌 " + "Next Prayer: " + current,
+			Title: "🕌 " + prayerName + " " + current,
 		})
 		time.Sleep(time.Second * 15)
 	}
 }
 
-func getPrayer(p Payload) string {
+func getPrayer(p Payload) (string, string) {
 	v := reflect.ValueOf(p.Data.Timings)
 
 	// Find which is next
 	latestTime := fmt.Sprint(p.Data.Timings.Lastthird)
+	prayerName := "Last Third:"
 	for i := 0; i < v.NumField(); i++ {
 		if timeCmpr(fmt.Sprint(v.Field(i).Interface()), time.Now().Format("15:04")) {
 			latestTime = fmt.Sprint(v.Field(i).Interface())
+			prayerName = v.Type().Field(i).Name + ":"
 			break
 		} else {
 			continue
 		}
 	}
 
-	return latestTime
+	return latestTime, prayerName
 }
 
 func timeCmpr(time, cur string) bool {
