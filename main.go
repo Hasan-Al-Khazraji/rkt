@@ -83,5 +83,10 @@ func timeCmpr(time, cur string) bool {
 func main() {
 	menuet.App().Label = "com.github.hasan-al-khazraji.rkt"
 	go rkt()
+	go func() {
+		for range time.Tick(1 * time.Hour) {
+			go rkt()
+		}
+	}()
 	menuet.App().RunApplication()
 }
